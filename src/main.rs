@@ -78,13 +78,15 @@ fn main() -> Result<(), BoxedError> {
     // println!("{:?}", entities[3]);
     // println!("{:?}", entities[4]);
     // println!("{:?}", entities[5]);
-    println!("total: {}", entities.len());
+    println!("total entries: {}", entities.len());
 
     let output = File::create("output.csv")?;
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .quote_style(csv::QuoteStyle::NonNumeric)
         .from_writer(output);
+
+    let mut rows_written = 0;
 
     for entity in entities.into_iter() {
         let year = 2023;
@@ -110,17 +112,15 @@ fn main() -> Result<(), BoxedError> {
         let title = format!("{}", entity.day.to_string());
         let content = format!("{}\n\n{}\n\n{}", title, entity.content, entity.source);
 
-        writer.write_record(&[date, title, content]);
+        writer.write_record(&[date, title, content])?;
+        rows_written += 1;
     }
 
-    Ok(())
-}
+    println!("entries written: {}", rows_written);
 
-#[derive(Debug)]
-struct Row {
-    send_date: chrono::NaiveDate,
-    title: String,
-    content: String,
+    writer.flush()?;
+
+    Ok(())
 }
 
 #[derive(Debug)]
