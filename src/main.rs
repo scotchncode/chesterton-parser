@@ -1,7 +1,10 @@
 use std::error::Error as StdError;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::str::FromStr;
 use std::{fs::File, io::BufReader};
+
+use chrono::Utc;
+use uuid::Uuid;
 
 type BoxedError = Box<dyn StdError>;
 
@@ -80,6 +83,63 @@ fn main() -> Result<(), BoxedError> {
     // println!("{:?}", entities[5]);
     println!("total entries: {}", entities.len());
 
+    output_sql(entities)?;
+
+    Ok(())
+}
+
+pub fn output_sql(entities: Vec<Entity>) -> Result<(), BoxedError> {
+    let mut output = File::create("output.sql")?;
+    let now = Utc::now().naive_utc();
+
+    // make collection
+    let collection_id = Uuid::new_v4();
+    let collection_str = format!(
+        "INSERT INTO collections (id, name, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}');\n\n",
+        &collection_id, "Chesterton Calendar", "active", now, now,
+    );
+
+    output.write(collection_str.as_bytes())?;
+
+    // make entries
+    let entry_header = format!("INSERT INTO entries (id, collection_id, name, content, send_on, created_at, updated_at) VALUES\n");
+    output.write(entry_header.as_bytes())?;
+
+    let mut rows = vec![];
+
+    for entity in entities.into_iter() {
+        let id = Uuid::new_v4();
+        let title = format!("{}", entity.day.to_string().replace("'", "''"));
+        let day = entity.day.clone();
+        if day.date.is_none() {
+            continue;
+        }
+        let date = day.clone().date.expect(&format!("issue with: {:?}", day));
+        let month = date.month.parse::<Month>()? as u64;
+        let day = date.day as u64;
+
+        fn format_date(date: u64) -> String {
+            if date < 10 {
+                return format!("0{}", date);
+            }
+            return format!("{}", date);
+        }
+
+        let send_on = format!("{}-{}", format_date(month), format_date(day));
+        let content = entity.content.replace("'", "''");
+        let row = format!(
+            "('{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            id, &collection_id, title, content, send_on, now, now,
+        );
+        rows.push(row);
+    }
+
+    output.write(rows.join(",\n").as_bytes())?;
+
+    Ok(())
+}
+
+pub async fn output_csv(entities: Vec<Entity>) -> Result<(), BoxedError> {
     let output = File::create("output.csv")?;
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
@@ -124,13 +184,13 @@ fn main() -> Result<(), BoxedError> {
 }
 
 #[derive(Debug)]
-struct Entity {
+pub struct Entity {
     day: Day,
     content: String,
     source: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Day {
     date: Option<Date>,
     name: Option<String>,
@@ -147,7 +207,7 @@ impl ToString for Day {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Date {
     month: &'static str,
     day: i32,
