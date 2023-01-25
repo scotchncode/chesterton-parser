@@ -126,7 +126,8 @@ pub fn output_sql(entities: Vec<Entity>) -> Result<(), BoxedError> {
         }
 
         let send_on = format!("{}-{}", format_date(month), format_date(day));
-        let content = entity.content.replace("'", "''");
+        let content = format!("{}\n{}\n{}", entity.name, entity.content, entity.suorce);
+        let content = content.replace("'", "''");
         let row = format!(
             "('{}', '{}', '{}', '{}', '{}', '{}', '{}'),",
             id, &collection_id, title, content, send_on, now, now,
