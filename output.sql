@@ -5,7 +5,7 @@ INSERT INTO entries (id, collection_id, name, content, send_on, created_at, upda
 
 The object of a New Year is not that we should have a new year. It
 is that we should have a new soul and a new nose; new feet, a new
-backbone, new ears, and new eyes. Unless a particular man made New Year
+backbone, new ears, and new eyes. Unless a particular man made New Yearg
 resolutions, he would make no resolutions. Unless a man starts afresh
 about things, he will certainly do nothing effective. Unless a man
 starts on the strange assumption that he has never existed before, it
